@@ -46,12 +46,14 @@ fn UDPSendto(comptime xev: type) type {
             userdata: ?*anyopaque,
         };
 
-        pub usingnamespace stream.Stream(xev, Self, .{
+        const options: stream.Options = .{
             .close = true,
             .poll = true,
             .read = .none,
             .write = .none,
-        });
+        };
+        pub const close = stream.Closeable(xev, Self, options).close;
+        pub const poll = stream.Pollable(xev, Self, options).poll;
 
         /// Initialize a new UDP with the family from the given address. Only
         /// the family is used, the actual address has no impact on the created
@@ -226,12 +228,7 @@ fn UDPSendtoIOCP(comptime xev: type) type {
             userdata: ?*anyopaque,
         };
 
-        pub usingnamespace stream.Stream(xev, Self, .{
-            .close = true,
-            .poll = false,
-            .read = .none,
-            .write = .none,
-        });
+        pub const close = stream.Closeable(xev, Self).close;
 
         /// Initialize a new UDP with the family from the given address. Only
         /// the family is used, the actual address has no impact on the created
@@ -423,12 +420,8 @@ fn UDPSendMsg(comptime xev: type) type {
             },
         };
 
-        pub usingnamespace stream.Stream(xev, Self, .{
-            .close = true,
-            .poll = true,
-            .read = .none,
-            .write = .none,
-        });
+        pub const close = stream.Closeable(xev, Self).close;
+        pub const poll = stream.Pollable(xev, Self).poll;
 
         /// Initialize a new UDP with the family from the given address. Only
         /// the family is used, the actual address has no impact on the created
@@ -694,13 +687,8 @@ fn UDPDynamic(comptime xev: type) type {
         pub const Union = xev.Union(&.{"UDP"});
         pub const State = xev.Union(&.{ "UDP", "State" });
 
-        pub usingnamespace stream.Stream(xev, Self, .{
-            .close = true,
-            .poll = true,
-            .read = .none,
-            .write = .none,
-            .type = "UDP",
-        });
+        pub const close = stream.Closeable(xev, Self).close;
+        pub const poll = stream.Pollable(xev, Self).poll;
 
         pub fn init(addr: std.net.Address) !Self {
             return .{ .backend = switch (xev.backend) {

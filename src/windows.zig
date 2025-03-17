@@ -4,7 +4,7 @@ const std = @import("std");
 const windows = std.os.windows;
 const posix = std.posix;
 
-pub usingnamespace std.os.windows;
+// pub usingnamespace std.os.windows;
 
 pub extern "kernel32" fn DeleteFileW(lpFileName: [*:0]const u16) callconv(windows.WINAPI) windows.BOOL;
 

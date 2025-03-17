@@ -104,25 +104,7 @@ pub fn Shared(comptime xev: type) type {
     };
 }
 
-/// Creates a stream type that is meant to be embedded within other
-/// types using "usingnamespace". A stream is something that supports read,
-/// write, close, etc. The exact operations supported are defined by the
-/// "options" struct.
-///
-/// T requirements:
-///   - field named "fd" of type fd_t or socket_t
-///   - decl named "initFd" to initialize a new T from a fd
-///
-pub fn Stream(comptime xev: type, comptime T: type, comptime options: Options) type {
-    return struct {
-        pub usingnamespace if (options.close) Closeable(xev, T, options) else struct {};
-        pub usingnamespace if (options.poll) Pollable(xev, T, options) else struct {};
-        pub usingnamespace if (options.read != .none) Readable(xev, T, options) else struct {};
-        pub usingnamespace if (options.write != .none) Writeable(xev, T, options) else struct {};
-    };
-}
-
-fn Pollable(comptime xev: type, comptime T: type, comptime options: Options) type {
+pub fn Pollable(comptime xev: type, comptime T: type, comptime options: Options) type {
     if (xev.dynamic) {
         // If all candidate backends do not support poll, our dynamic
         // type cannot support poll.
@@ -783,7 +765,7 @@ pub fn Writeable(comptime xev: type, comptime T: type, comptime options: Options
             // Initialize our completion
             req.* = .{ .full_write_buffer = buf };
             // Must be kept in sync with partial write logic inside the callback
-            self.writeInit(&req.completion, buf);
+            writeInit(self, &req.completion, buf);
             req.completion.userdata = q;
             req.completion.callback = (struct {
                 fn callback(
@@ -814,7 +796,7 @@ pub fn Writeable(comptime xev: type, comptime T: type, comptime options: Options
                         if (written_len < queued_len) {
                             // Write remainder of the buffer, reusing the same completion
                             const rem_buf = writeBufferRemainder(cb_res.buf, written_len);
-                            cb_res.writer.writeInit(&req_inner.completion, rem_buf);
+                            writeInit(cb_res.writer, &req_inner.completion, rem_buf);
                             req_inner.completion.userdata = q_inner;
                             req_inner.completion.callback = callback;
                             l_inner.add(&req_inner.completion);
@@ -889,7 +871,7 @@ pub fn Writeable(comptime xev: type, comptime T: type, comptime options: Options
                 r: xev.WriteError!usize,
             ) xev.CallbackAction,
         ) void {
-            self.writeInit(c, buf);
+            writeInit(self, c, buf);
             c.userdata = userdata;
             c.callback = (struct {
                 fn callback(
@@ -1034,13 +1016,11 @@ pub fn GenericStream(comptime xev: type) type {
 
         pub const Union = xev.Union(&.{"Stream"});
 
-        pub usingnamespace Stream(xev, Self, .{
-            .close = true,
-            .poll = true,
-            .read = .read,
-            .write = .write,
-            .type = "Stream",
-        });
+        pub const close = Closeable(xev, Self).close;
+        pub const poll = Pollable(xev, Self).poll;
+        pub const read = Readable(xev, Self).read;
+        pub const write = Writeable(xev, Self).write;
+        pub const queueWrite = Writeable(xev, Self).queueWrite;
 
         pub fn initFd(fd: std.posix.pid_t) Self {
             return .{ .backend = switch (xev.backend) {
@@ -1075,12 +1055,18 @@ pub fn GenericStream(comptime xev: type) type {
         /// The underlying file
         fd: std.posix.fd_t,
 
-        pub usingnamespace Stream(xev, Self, .{
+        const options: Options = .{
             .close = true,
             .poll = true,
             .read = .read,
             .write = .write,
-        });
+        };
+
+        pub const close = Closeable(xev, Self, options).close;
+        pub const poll = Pollable(xev, Self, options).poll;
+        pub const read = Readable(xev, Self, options).read;
+        pub const write = Writeable(xev, Self, options).write;
+        pub const queueWrite = Writeable(xev, Self, options).queueWrite;
 
         /// Initialize a generic stream from a file descriptor.
         pub fn initFd(fd: std.posix.fd_t) Self {

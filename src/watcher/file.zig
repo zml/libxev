@@ -38,13 +38,19 @@ fn FileStream(comptime xev: type) type {
         /// The underlying file
         fd: FdType,
 
-        pub usingnamespace stream.Stream(xev, Self, .{
+        const options: stream.Options = .{
             .close = true,
             .poll = true,
             .read = .read,
             .write = .write,
             .threadpool = true,
-        });
+        };
+        pub const close = stream.Closeable(xev, Self, options).close;
+        pub const poll = stream.Pollable(xev, Self, options).poll;
+        pub const read = stream.Readable(xev, Self, options).read;
+        pub const write = stream.Writeable(xev, Self, options).write;
+        pub const queueWrite = stream.Writeable(xev, Self, options).queueWrite;
+        // pub const writeInit = stream.Writeable(xev, Self, options).writeInit;
 
         /// Initialize a File from a std.fs.File.
         pub fn init(file: std.fs.File) !Self {
@@ -317,15 +323,18 @@ fn FileDynamic(comptime xev: type) type {
         backend: Union,
 
         pub const Union = xev.Union(&.{"File"});
-
-        pub usingnamespace stream.Stream(xev, Self, .{
+        const options: stream.Options = .{
             .close = true,
             .poll = true,
             .read = .read,
             .write = .write,
             .threadpool = true,
             .type = "File",
-        });
+        };
+        pub const close = stream.Closeable(xev, Self, options).close;
+        pub const poll = stream.Pollable(xev, Self, options).poll;
+        pub const read = stream.Readable(xev, Self, options).read;
+        pub const write = stream.Writeable(xev, Self, options).write;
 
         pub fn init(file: std.fs.File) !Self {
             return .{ .backend = switch (xev.backend) {

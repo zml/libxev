@@ -25,13 +25,17 @@ fn TCPStream(comptime xev: type) type {
         const FdType = if (xev.backend == .iocp) std.os.windows.HANDLE else posix.socket_t;
 
         fd: FdType,
-
-        pub usingnamespace stream.Stream(xev, Self, .{
+        const options: stream.Options = .{
             .close = true,
             .poll = true,
             .read = .recv,
             .write = .send,
-        });
+        };
+        pub const close = stream.Closeable(xev, Self, options).close;
+        pub const poll = stream.Pollable(xev, Self, options).poll;
+        pub const read = stream.Readable(xev, Self, options).read;
+        pub const write = stream.Writeable(xev, Self, options).write;
+        pub const queueWrite = stream.Writeable(xev, Self, options).queueWrite;
 
         /// Initialize a new TCP with the family from the given address. Only
         /// the family is used, the actual address has no impact on the created
@@ -249,14 +253,10 @@ fn TCPDynamic(comptime xev: type) type {
 
         pub const Union = xev.Union(&.{"TCP"});
 
-        pub usingnamespace stream.Stream(xev, Self, .{
-            .close = true,
-            .poll = true,
-            .read = .read,
-            .write = .write,
-            .threadpool = true,
-            .type = "TCP",
-        });
+        pub const close = stream.Closeable(xev, Self).close;
+        pub const poll = stream.Pollable(xev, Self).poll;
+        pub const read = stream.Readable(xev, Self).read;
+        pub const write = stream.Writeable(xev, Self).write;
 
         pub fn init(addr: std.net.Address) !Self {
             return .{ .backend = switch (xev.backend) {

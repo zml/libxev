@@ -4,7 +4,39 @@ const builtin = @import("builtin");
 /// The low-level IO interfaces using the recommended compile-time
 /// interface for the target system.
 const xev = Backend.default().Api();
-pub usingnamespace xev;
+pub const dynamic = xev.dynamic;
+pub const backend = xev.backend;
+pub const available = xev.available;
+pub const Loop = xev.Loop;
+pub const Completion = xev.Completion;
+pub const Result = xev.Result;
+pub const ReadBuffer = xev.ReadBuffer;
+pub const WriteBuffer = xev.WriteBuffer;
+pub const Options = xev.Options;
+pub const RunMode = xev.RunMode;
+pub const CallbackAction = xev.CallbackAction;
+pub const CompletionState = xev.CompletionState;
+pub const AcceptError = xev.AcceptError;
+pub const CancelError = xev.CancelError;
+pub const CloseError = xev.CloseError;
+pub const ConnectError = xev.ConnectError;
+pub const ShutdownError = xev.ShutdownError;
+pub const WriteError = xev.WriteError;
+pub const ReadError = xev.ReadError;
+pub const PollError = xev.PollError;
+pub const PollEvent = xev.PollEvent;
+pub const WriteQueue = xev.WriteQueue;
+pub const WriteRequest = xev.WriteRequest;
+pub const Async = xev.Async;
+pub const File = xev.File;
+pub const Process = xev.Process;
+pub const Stream = xev.Stream;
+pub const Timer = xev.Timer;
+pub const TCP = xev.TCP;
+pub const UDP = xev.UDP;
+pub const Callback = xev.Callback;
+pub const Sys = xev.Sys;
+
 //pub usingnamespace Epoll;
 
 /// The dynamic interface that allows for runtime selection of the
@@ -155,10 +187,10 @@ pub fn Xev(comptime be: Backend, comptime T: type) type {
         /// use a different callback mechanism.
         pub const Callback = *const fn (
             userdata: ?*anyopaque,
-            loop: *Loop,
-            completion: *Completion,
-            result: Result,
-        ) CallbackAction;
+            loop: *T.Loop,
+            completion: *T.Completion,
+            result: T.Result,
+        ) loop.CallbackAction;
 
         /// A way to access the raw type.
         pub const Sys = T;
@@ -167,10 +199,10 @@ pub fn Xev(comptime be: Backend, comptime T: type) type {
         /// implements xev.Callback and is the default value for completions.
         pub fn noopCallback(
             _: ?*anyopaque,
-            _: *Loop,
-            _: *Completion,
-            _: Result,
-        ) CallbackAction {
+            _: *T.Loop,
+            _: *T.Completion,
+            _: T.Result,
+        ) loop.CallbackAction {
             return .disarm;
         }
 
@@ -179,7 +211,7 @@ pub fn Xev(comptime be: Backend, comptime T: type) type {
         }
 
         test "completion is zero-able" {
-            const c: Completion = .{};
+            const c: T.Completion = .{};
             _ = c;
         }
     };
