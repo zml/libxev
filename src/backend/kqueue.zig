@@ -1590,12 +1590,12 @@ pub const ReadError = posix.KEventError ||
     posix.PReadError ||
     posix.RecvFromError ||
     error{
-    EOF,
-    Canceled,
-    MissingKevent,
-    PermissionDenied,
-    Unexpected,
-};
+        EOF,
+        Canceled,
+        MissingKevent,
+        PermissionDenied,
+        Unexpected,
+    };
 
 pub const WriteError = posix.KEventError ||
     posix.WriteError ||
@@ -1604,10 +1604,10 @@ pub const WriteError = posix.KEventError ||
     posix.SendMsgError ||
     posix.SendToError ||
     error{
-    Canceled,
-    PermissionDenied,
-    Unexpected,
-};
+        Canceled,
+        PermissionDenied,
+        Unexpected,
+    };
 
 pub const MachPortError = posix.KEventError || error{
     Canceled,
